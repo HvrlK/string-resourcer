@@ -76,6 +76,7 @@ function listMajors(auth) {
     sheets.spreadsheets.values.get({
         spreadsheetId: '1iGmKHDSYiIzuw5M4h88boy-UTsT_2IPT08AiCAAtdj4',
         range: 'Strings!D4:D27',
+
     }, (err, res) => {
         if (err) return console.log('The API returned an error: ' + err);
         const rows = res.data.values;
@@ -108,7 +109,9 @@ function listMajors(auth) {
 
 
 
-
+const START_POINT_STRINGS = 4;
+const START_POINT_PLURALS = 3;
+const HOW_MANY_QUANTITIES = 6;
 
 
 let DOCUMENT_ID = '';
@@ -116,12 +119,21 @@ let PLATFORM = '';
 let LOCALE_COLUMN = '';
 let LOCALE_NAME = '';
 let COLUMN_LENGTH = '';
+let PLURALS_LOCALE_COLUMN = '';
+let PLURALS_COLUMN_LENGTH = '';
 
 let PLATFORMS = [];
 let NAMESPACES = [];
 let KEYS = [];
 let LOCALE = [];
 let STRINGS = [];
+
+let PLURALS = [];
+let PLURAL_PLAFORMS = [];
+let PLURAL_NAMESPACES = [];
+let PLURAL_KEYS = [];
+let PLURAL_QUANTITY = [];
+let PLURAL_LOCALE = [];
 //both
 function askingInputData() {
     const rl = readline.createInterface({
@@ -129,7 +141,7 @@ function askingInputData() {
         output: process.stdout,
     });
     return new Promise(resolve => {
-        rl.question('Enter platform(IOS/ANDROID), document id, column length, locale column name (A/B/C), locale name (de/ru/base) (split data with commas): ', (code) => {
+        rl.question('Enter platform(IOS/ANDROID), document id, column length, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C), length of plurals (split data with commas): ', (code) => {
             rl.close();
 
             const data = code.split(',');
@@ -138,34 +150,29 @@ function askingInputData() {
             COLUMN_LENGTH = data[2];
             LOCALE_COLUMN = data[3];
             LOCALE_NAME = data[4];
+            PLURALS_LOCALE_COLUMN = data[5];
+            PLURALS_COLUMN_LENGTH = data[6];
             resolve();
         })
     });
 }
 
-//both
-function getStringsData(sheets, symbol) {
-    return new Promise(resolve => {
-        sheets.spreadsheets.values.get({
-            spreadsheetId: DOCUMENT_ID,
-            range: 'Strings!' + symbol + '4:' + symbol + '' + COLUMN_LENGTH,
-        }, (err, res) => {
-            if (err) return console.log('The API returned an error: ' + err);
-            const rows = res.data.values;
-            if (rows.length) {
-                resolve(rows);
-            } else {
-                resolve();
-                console.log('No data found.');
-            }
-        });
-    });
-}
+
 
 //android
 function makeStringsReadyToBeWrittenAndroid() {
     let result = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n\n';
-    for (let i = 0; i< STRINGS.length; i++) {
+    for (let i = 0, pluralIndex = 0; i< STRINGS.length; i++) {
+        if (i!==0 && NAMESPACES[i+1].toString() !== NAMESPACES[i].toString() && NAMESPACES[i].toString() === PLURAL_NAMESPACES[pluralIndex].toString()){
+            do {
+                if(PLURALS[pluralIndex].startsWith('<plurals') || PLURALS[pluralIndex].startsWith('</plurals'))
+                    result += '    ';
+                else
+                    result += '        ';
+                result += PLURALS[pluralIndex] + '\n';
+                pluralIndex++;
+            }while (PLURALS[pluralIndex-1].startsWith('</plurals'))
+        }
         if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString()))
             result += '     <!--' +NAMESPACES[i]+'-->\n';
         result += '    ' + STRINGS[i] + '\n';
@@ -173,6 +180,7 @@ function makeStringsReadyToBeWrittenAndroid() {
     result += '</resources>';
     return result;
 }
+
 
 //android
 function writeFilesAndroid() {
@@ -193,21 +201,50 @@ function writeFilesAndroid() {
     }
 }
 
+
+//both
+function getStringsData(tableName, sheets, symbol, length, start) {
+    return new Promise(resolve => {
+        sheets.spreadsheets.values.get({
+            spreadsheetId: DOCUMENT_ID,
+            range: tableName + '!' + symbol + start + ':' + symbol + '' + length,
+        }, (err, res) => {
+            if (err) return console.log('The API returned an error: ' + err);
+            const rows = res.data.values;
+            if (rows.length) {
+                resolve(rows);
+            } else {
+                resolve();
+                console.log('No data found.');
+            }
+        });
+    });
+}
+
+
 //both
 async function getNeededData(auth) {
     await askingInputData();
     const sheets = google.sheets({version: 'v4', auth});
-    const platforms = await getStringsData(sheets, 'A');
-    const namespaces = await getStringsData(sheets, 'B');
-    const keys = await getStringsData(sheets, 'C');
-    const locale = await getStringsData(sheets, LOCALE_COLUMN);
+    const platforms = await getStringsData('Strings',sheets, 'A', COLUMN_LENGTH, START_POINT_STRINGS);
+    const namespaces = await getStringsData('Strings',sheets, 'B', COLUMN_LENGTH, START_POINT_STRINGS);
+    const keys = await getStringsData('Strings',sheets, 'C', COLUMN_LENGTH, START_POINT_STRINGS);
+    const locale = await getStringsData('Strings',sheets, LOCALE_COLUMN, COLUMN_LENGTH, START_POINT_STRINGS);
 
-    if (!platforms || !namespaces || !keys || !locale)
-        throw 'NotFound';
+
+    const pluralsPlatform = await getStringsData('Plurals',sheets, 'A', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+    const pluralsNamespace = await getStringsData('Plurals',sheets, 'B', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+    const pluralsKeys = await getStringsData('Plurals',sheets, 'C', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+    const pluralsQuantity = await getStringsData('Plurals',sheets, 'D', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+    const pluralsLocale = await getStringsData('Plurals',sheets, PLURALS_LOCALE_COLUMN, PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+
+
 
     filterByPlatform(platforms, namespaces, keys, locale);
+    filterPluralsByPlatform(pluralsPlatform, pluralsNamespace, pluralsKeys, pluralsQuantity, pluralsLocale);
     if (PLATFORM.toUpperCase() === 'ANDROID') {
         parseAndroidStrings();
+        parsePluralsAndroid();
         writeFilesAndroid();
     }
     else if (PLATFORM.toUpperCase() === 'IOS') {
@@ -247,41 +284,124 @@ function makeLocalesGreatAgain(locale){
         }
         result += locale[i];
     }
+    return makeReplacesForXmlFile(result);
+}
+
+function makeReplacesForXmlFile(locale) {
+    let result = '';
+    for (let i = 0; i < locale.length; i++) {
+        if(locale[i] === '&'){
+            result += '&amp;';
+            continue;
+        }
+        if(locale[i] === '<'){
+            result += '&lt;';
+            continue;
+        }
+        if(locale[i] === '>'){
+            result += '&gt;';
+            continue;
+        }
+        if(locale[i] === '"'){
+            result += '&quot;';
+            continue;
+        }
+        if(locale[i] === "'"){
+            result += '&apos;';
+            continue;
+        }
+        if(locale[i] === '\r' && locale[i+1] === '\n'){
+            result += '\\n';
+            i++;
+            continue;
+        }
+        if(locale[i] === '\r' || locale[i] === '\n'){
+            result += '\\n';
+            continue
+        }
+    }
     return result;
 }
 
 //android
 function parseAndroidStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
-        if(!NAMESPACES[i].toString() || !KEYS[i].toString() || !LOCALE[i].toString() || !PLATFORMS[i].toString())
+        if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
             continue;
-        let res = 'string name=' + '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toString().toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toString().toLocaleLowerCase()) + '">' + makeLocalesGreatAgain(LOCALE[i].toString()) + '</string';
+        let res = 'string name=' + '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '">' + makeLocalesGreatAgain(LOCALE[i]) + '</string';
         res = '<' + res + '>';
         STRINGS.push(res);
-        console.log(res);
     }
+}
+
+
+function parsePluralsAndroid() {
+    console.log(PLURAL_NAMESPACES);
+    let writeHeader = true;
+    for (let i = 0; i < PLURAL_PLAFORMS.length; i++) {
+        let res = '';
+
+        if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
+            continue;
+        if(writeHeader) {
+            res = '<plurals ';
+            res += 'name ='+ "'" + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]) + "'>";
+            PLURALS.push(res);
+            res = '';
+            writeHeader = false;
+        }
+        res = '<item ';
+        res += 'quantity=' + "'" + PLURAL_QUANTITY[i] + "'>" + PLURAL_LOCALE[i] + '</';
+        res += 'item>';
+        PLURALS.push(res);
+        if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1]){
+            res = '</plurals';
+            PLURALS.push(res);
+            writeHeader = true;
+        }
+    }
+    console.log(PLURALS);
 }
 
 //ios
 function parseIosStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
-        if(!NAMESPACES[i].toString() || !KEYS[i].toString() || !LOCALE[i].toString() || !PLATFORMS[i].toString())
+        if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
             continue;
-        let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toString().toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toString().toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i].toString()) + '";';
+        let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i]) + '";';
         STRINGS.push(res);
-        console.log(res);
     }
 }
 
+//both
+function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
+    let platform = '';
+    let namesp = '';
+    let k = '';
+    for (let i = 0; i < platforms.length; i++) {
+        if(platforms[i].toString()){
+            platform = platforms[i].toString();
+            namesp = namespace[i].toString();
+            k = key[i].toString();
+        }
+        if(platform.toUpperCase() === PLATFORM.toUpperCase() || platform.toUpperCase() === 'BOTH'){
+            PLURAL_PLAFORMS.push(platform);
+            PLURAL_KEYS.push(k);
+            PLURAL_LOCALE.push(locale[i].toString());
+            PLURAL_NAMESPACES.push(namesp);
+            PLURAL_QUANTITY.push(quantity[i].toString());
+        }
+    }
+}
 
 //both
 function filterByPlatform(platforms, namespaces, keys, locale) {
     for (let i = 0; i < platforms.length; i++) {
         if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
-            PLATFORMS.push(platforms[i]);
-            NAMESPACES.push(namespaces[i]);
-            KEYS.push(keys[i]);
-            LOCALE.push(locale[i]);
+            PLATFORMS.push(platforms[i].toString());
+            NAMESPACES.push(namespaces[i].toString());
+            KEYS.push(keys[i].toString());
+            LOCALE.push(locale[i].toString());
         }
     }
 }
