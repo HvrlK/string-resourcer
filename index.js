@@ -447,7 +447,6 @@ function parsePluralsAndroid() {
             writeHeader = true;
         }
     }
-    console.log(PLURAL_NAMESPACES);
 }
 
 //ios
@@ -458,12 +457,10 @@ function parseIosStrings() {
         let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i]) + '";';
         STRINGS.push(res);
     }
-    console.log(STRINGS);
 }
 
 //both
 function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
-    console.log('filter platform');
     let platform = '';
     let namesp = '';
     let k = '';
