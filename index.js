@@ -185,7 +185,7 @@ function makePluralsReadyToBeWrittenIos() {
     let result = '<?xml version="1.0" encoding="UTF-8"?>\n';
     result += '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"\n';
     result += '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n';
-    result += '<plist version="1.0">';
+    result += '<plist version="1.0">\n';
     result += '<dict>';
     for (let i = 0; i< PLURALS.length; i++) {
         result += PLURALS[i];
