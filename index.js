@@ -162,20 +162,20 @@ function askingInputData() {
 //android
 function makeStringsReadyToBeWrittenAndroid() {
     let result = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n\n';
-    for (let i = 0, pluralIndex = 0; i< STRINGS.length; i++) {
-        if (i!==0 && NAMESPACES[i+1].toString() !== NAMESPACES[i].toString() && NAMESPACES[i].toString() === PLURAL_NAMESPACES[pluralIndex].toString()){
-            do {
-                if(PLURALS[pluralIndex].startsWith('<plurals') || PLURALS[pluralIndex].startsWith('</plurals'))
-                    result += '    ';
-                else
-                    result += '        ';
-                result += PLURALS[pluralIndex] + '\n';
-                pluralIndex++;
-            }while (PLURALS[pluralIndex-1].startsWith('</plurals'))
-        }
-        if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString()))
+    for (let i = 0; i< STRINGS.length; i++) {
+        if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
+            result += '\n';
             result += '     <!--' +NAMESPACES[i]+'-->\n';
+        }
+
         result += '    ' + STRINGS[i] + '\n';
+    }
+    for (let i = 0; i<PLURALS.length; i++) {
+        if (PLURALS[i].startsWith('<plurals') || PLURALS[i].startsWith('</plurals') || PLURALS[i].startsWith('\n<!--'))
+            result += '    ';
+        else
+            result += '        ';
+        result += PLURALS[i] + '\n';
     }
     result += '</resources>';
     return result;
@@ -284,7 +284,8 @@ function makeLocalesGreatAgain(locale){
         }
         result += locale[i];
     }
-    return makeReplacesForXmlFile(result);
+    const done = makeReplacesForXmlFile(result);
+    return done;
 }
 
 function makeReplacesForXmlFile(locale) {
@@ -319,6 +320,7 @@ function makeReplacesForXmlFile(locale) {
             result += '\\n';
             continue
         }
+        result += locale[i];
     }
     return result;
 }
@@ -336,7 +338,6 @@ function parseAndroidStrings() {
 
 
 function parsePluralsAndroid() {
-    console.log(PLURAL_NAMESPACES);
     let writeHeader = true;
     for (let i = 0; i < PLURAL_PLAFORMS.length; i++) {
         let res = '';
@@ -344,8 +345,10 @@ function parsePluralsAndroid() {
         if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
             continue;
         if(writeHeader) {
+            res = '\n<!-- ' + PLURAL_NAMESPACES[i] + '-->';
+            PLURALS.push(res);
             res = '<plurals ';
-            res += 'name ='+ "'" + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]) + "'>";
+            res += 'name ='+ "'" + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase() + "'>";
             PLURALS.push(res);
             res = '';
             writeHeader = false;
@@ -354,13 +357,14 @@ function parsePluralsAndroid() {
         res += 'quantity=' + "'" + PLURAL_QUANTITY[i] + "'>" + PLURAL_LOCALE[i] + '</';
         res += 'item>';
         PLURALS.push(res);
-        if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1]){
+        if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1] || PLURAL_KEYS[i] !== PLURAL_KEYS[i+1]){
             res = '</plurals';
+            res += '>';
             PLURALS.push(res);
             writeHeader = true;
         }
     }
-    console.log(PLURALS);
+    console.log(PLURAL_NAMESPACES);
 }
 
 //ios
@@ -378,8 +382,8 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
     let platform = '';
     let namesp = '';
     let k = '';
-    for (let i = 0; i < platforms.length; i++) {
-        if(platforms[i].toString()){
+    for (let i = 0; i < quantity.length; i++) {
+        if(platforms[i] && platforms[i].toString()){
             platform = platforms[i].toString();
             namesp = namespace[i].toString();
             k = key[i].toString();
