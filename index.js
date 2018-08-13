@@ -181,6 +181,20 @@ function makeStringsReadyToBeWrittenAndroid() {
     return result;
 }
 
+function makePluralsReadyToBeWrittenIos() {
+    let result = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    result += '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"\n';
+    result += '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n';
+    result += '<plist version="1.0">';
+    result += '<dict>';
+    for (let i = 0; i< PLURALS.length; i++) {
+        result += PLURALS[i];
+    }
+    result += '</dict>\n';
+    result += '</plist>';
+    return result;
+}
+
 
 //android
 function writeFilesAndroid() {
@@ -249,12 +263,44 @@ async function getNeededData(auth) {
     }
     else if (PLATFORM.toUpperCase() === 'IOS') {
         parseIosStrings();
-
+        parsePluralsIos();
+        writeFilesIos();
     }
     else {
         console.log('Invalid platform');
     }
+}
 
+
+function writeFilesIos() {
+    let name = '';
+    if (LOCALE_NAME.toLocaleLowerCase() === 'base')
+        name = 'Base';
+    else
+        name = LOCALE_NAME.toLowerCase();
+    if (!fs.existsSync('./' + name + '.lproj'))
+        fs.mkdirSync('./' + name + '.lproj');
+    fs.writeFile('./' + name + '.lproj' + '/Localizable' + '.strings', makeStringsReadyToBeWrittenIos(), function (err) {
+        if (err) throw err;
+        console.log('Saved');
+    });
+    fs.writeFile('./' + name + '.lproj' + '/Localizable' + '.stringsdict', makePluralsReadyToBeWrittenIos(), function (err) {
+        if (err) throw err;
+        console.log('Saved');
+    });
+}
+
+function makeStringsReadyToBeWrittenIos() {
+    let result = '';
+    for (let i = 0; i< STRINGS.length; i++) {
+        if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
+            result += '\n';
+            result += '//MARK: ' +NAMESPACES[i]+'\n';
+        }
+        result += STRINGS[i] + '\n';
+    }
+
+    return result;
 }
 
 //both
@@ -267,6 +313,43 @@ function insertUnderScoresInsteadSpaces(key) {
     return res.slice(0, -1);
 }
 
+function parsePluralsIos() {
+    let writeHeader = true;
+    for (let i = 0; i < PLURAL_PLAFORMS.length; i++) {
+        let res = '';
+
+        if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
+            continue;
+        if(writeHeader) {
+            res = '\n    <key>name ='+ "'" + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase() + "'</key>\n";
+            res += '    <dict>\n';
+
+            res += '        <key>' + 'NSStringLocalizedFormatKey' + '</key>\n';
+            res += '        <string>' + '%#@placeholder' + '1' + '</string>\n';
+            res += '        <key>' + 'placeholder' + '1' + '</key>\n';
+
+
+            res += '        <dict>\n';
+            res += '            <key>' + 'NSStringFormatSpecTypeKey' + '</key>\n';
+            res += '            <string>' + 'NSStringPluralRuleType' + '</string>\n';
+            res += '            <key>' + 'NSStringFormatValueTypeKey' + '</key>\n';
+
+
+            PLURALS.push(res);
+            res = '';
+            writeHeader = false;
+        }
+        res = '            <key>' + PLURAL_QUANTITY[i] + '</key>\n';
+        res += '            <string>' + PLURAL_LOCALE[i] + '</string>\n';
+        PLURALS.push(res);
+        if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1] || PLURAL_KEYS[i] !== PLURAL_KEYS[i+1]){
+            res = '        </dict>\n';
+            res += '    </dict>\n';
+            PLURALS.push(res);
+            writeHeader = true;
+        }
+    }
+}
 
 //both
 function makeLocalesGreatAgain(locale){
@@ -345,7 +428,7 @@ function parsePluralsAndroid() {
         if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
             continue;
         if(writeHeader) {
-            res = '\n<!-- ' + PLURAL_NAMESPACES[i] + '-->';
+            res = '\n    <!-- ' + PLURAL_NAMESPACES[i] + '-->';
             PLURALS.push(res);
             res = '<plurals ';
             res += 'name ='+ "'" + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase() + "'>";
@@ -375,10 +458,12 @@ function parseIosStrings() {
         let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i]) + '";';
         STRINGS.push(res);
     }
+    console.log(STRINGS);
 }
 
 //both
 function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
+    console.log('filter platform');
     let platform = '';
     let namesp = '';
     let k = '';
@@ -400,6 +485,7 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
 
 //both
 function filterByPlatform(platforms, namespaces, keys, locale) {
+
     for (let i = 0; i < platforms.length; i++) {
         if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
             PLATFORMS.push(platforms[i].toString());
