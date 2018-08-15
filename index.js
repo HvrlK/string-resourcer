@@ -181,7 +181,7 @@ function makeStringsReadyToBeWrittenAndroid() {
 
 function makePluralsReadyToBeWrittenIos() {
     let result = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    result += '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"\n';
+    result += '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" ';
     result += '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n';
     result += '<plist version="1.0">\n';
     result += '<dict>';
@@ -350,11 +350,11 @@ function parsePluralsIos() {
         if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
             continue;
         if(writeHeader) {
-            res = '\n    <key>name ='+ "'" + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase() + "'</key>\n";
+            res = '\n    <key>' + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase() + '</key>\n';
             res += '    <dict>\n';
 
             res += '        <key>' + 'NSStringLocalizedFormatKey' + '</key>\n';
-            res += '        <string>' + '%#@placeholder' + '1' + '</string>\n';
+            res += '        <string>' + '%#@placeholder' + '1@' + '</string>\n';
             res += '        <key>' + 'placeholder' + '1' + '</key>\n';
 
 

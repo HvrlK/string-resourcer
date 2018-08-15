@@ -1,12 +1,10 @@
 Do npm install
 To launch script type: "node index.js" from project dir
 
-Takes 7 arguments :
+Takes 5 arguments :
 
 1 - platform
 2 - document id in google docs
-3 - length of Strings table
-4 - locale column name for Strings
-5 - name of locale (base, de, ru)
-6 - locale column name for Plurals
-7 - length of Plurals table
+3 - locale column name for Strings
+4 - name of locale (base, de, ru)
+5 - locale column name for Plurals
