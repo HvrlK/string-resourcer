@@ -141,17 +141,15 @@ function askingInputData() {
         output: process.stdout,
     });
     return new Promise(resolve => {
-        rl.question('Enter platform(IOS/ANDROID), document id, column length, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C), length of plurals (split data with commas): ', (code) => {
+        rl.question('Enter platform(IOS/ANDROID), document id, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C): ', (code) => {
             rl.close();
 
             const data = code.split(',');
             PLATFORM = data[0];
             DOCUMENT_ID = data[1];
-            COLUMN_LENGTH = data[2];
-            LOCALE_COLUMN = data[3];
-            LOCALE_NAME = data[4];
-            PLURALS_LOCALE_COLUMN = data[5];
-            PLURALS_COLUMN_LENGTH = data[6];
+            LOCALE_COLUMN = data[2];
+            LOCALE_NAME = data[3];
+            PLURALS_LOCALE_COLUMN = data[4];
             resolve();
         })
     });
@@ -223,7 +221,7 @@ function getStringsData(tableName, sheets, symbol, length, start) {
             spreadsheetId: DOCUMENT_ID,
             range: tableName + '!' + symbol + start + ':' + symbol + '' + length,
         }, (err, res) => {
-            if (err) return console.log('The API returned an error: ' + err);
+            if (err) return resolve(undefined);
             const rows = res.data.values;
             if (rows.length) {
                 resolve(rows);
@@ -235,11 +233,42 @@ function getStringsData(tableName, sheets, symbol, length, start) {
     });
 }
 
+function validateData(data) {
+    let undefCounter = 0;
+    if(!data)
+        return false;
+    for (let i = 0; i < data.length; i ++){
+        if (!data[i])
+            undefCounter++;
+    }
+    if (undefCounter === data.length - 1)
+        return false;
+    else
+        return true;
+}
 
 //both
 async function getNeededData(auth) {
     await askingInputData();
     const sheets = google.sheets({version: 'v4', auth});
+    let checkForDataPresence = [];
+    for (let i = 1; i < 100; i++) {
+        checkForDataPresence = await getStringsData('Strings',sheets, 'A', i * 100 + START_POINT_STRINGS, (i - 1) * 100 + START_POINT_STRINGS);
+        if (!validateData(checkForDataPresence)){
+            COLUMN_LENGTH = (i - 1) * 100 + START_POINT_STRINGS;
+            break;
+        }
+    }
+    console.log('PLURALS');
+    for (let i = 1; i < 100; i++) {
+        checkForDataPresence = await getStringsData('Plurals',sheets, 'D', i * 5 + START_POINT_PLURALS, (i - 1) * 5 + START_POINT_PLURALS);
+        if((i - 1) * 5 + START_POINT_PLURALS > 20)
+            console.log(checkForDataPresence);
+        if (!validateData(checkForDataPresence)){
+            PLURALS_COLUMN_LENGTH = (i - 1) * 5 + START_POINT_PLURALS;
+            break;
+        }
+    }
     const platforms = await getStringsData('Strings',sheets, 'A', COLUMN_LENGTH, START_POINT_STRINGS);
     const namespaces = await getStringsData('Strings',sheets, 'B', COLUMN_LENGTH, START_POINT_STRINGS);
     const keys = await getStringsData('Strings',sheets, 'C', COLUMN_LENGTH, START_POINT_STRINGS);
@@ -482,7 +511,6 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
 
 //both
 function filterByPlatform(platforms, namespaces, keys, locale) {
-
     for (let i = 0; i < platforms.length; i++) {
         if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
             PLATFORMS.push(platforms[i].toString());
