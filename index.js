@@ -362,7 +362,7 @@ function parsePluralsIos() {
             res += '            <key>' + 'NSStringFormatSpecTypeKey' + '</key>\n';
             res += '            <string>' + 'NSStringPluralRuleType' + '</string>\n';
             res += '            <key>' + 'NSStringFormatValueTypeKey' + '</key>\n';
-
+            res += '            <string>d</string>\n';
 
             PLURALS.push(res);
             res = '';
