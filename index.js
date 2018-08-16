@@ -324,8 +324,10 @@ function makeStringsReadyToBeWrittenIos() {
     let result = '';
     for (let i = 0; i< STRINGS.length; i++) {
         if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
-            result += '\n';
-            result += '//MARK: ' +NAMESPACES[i]+'\n';
+            if(NAMESPACES[i] !== '' && NAMESPACES[i] !== undefined){
+                result += '\n';
+                result += '//MARK: ' +NAMESPACES[i]+'\n';
+            }
         }
         result += STRINGS[i] + '\n';
     }
