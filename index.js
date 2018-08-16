@@ -353,7 +353,7 @@ function parsePluralsIos() {
         if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
             continue;
         if(writeHeader) {
-            res = '\n    <key>' + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase() + '</key>\n';
+            res = '\n    <key>' + makeLocalesGreatAgain(insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(makeReplacesForXmlFile(PLURAL_KEYS[i])).toLocaleLowerCase(), true) + '</key>\n';
             res += '    <dict>\n';
 
             res += '        <key>' + 'NSStringLocalizedFormatKey' + '</key>\n';
@@ -372,7 +372,7 @@ function parsePluralsIos() {
             writeHeader = false;
         }
         res = '            <key>' + PLURAL_QUANTITY[i] + '</key>\n';
-        res += '            <string>' + PLURAL_LOCALE[i] + '</string>\n';
+        res += '            <string>' + makeLocalesGreatAgain(PLURAL_LOCALE[i], true) + '</string>\n';
         PLURALS.push(res);
         if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1] || PLURAL_KEYS[i] !== PLURAL_KEYS[i+1]){
             res = '        </dict>\n';
@@ -384,7 +384,7 @@ function parsePluralsIos() {
 }
 
 //both
-function makeLocalesGreatAgain(locale){
+function makeLocalesGreatAgain(locale, replaces){
     let result = '';
     let howManyInsertions = 1;
     for (let i = 0; i<locale.length; i++) {
@@ -399,8 +399,11 @@ function makeLocalesGreatAgain(locale){
         }
         result += locale[i];
     }
-    const done = makeReplacesForXmlFile(result);
-    return done;
+    if(replaces){
+        const done = makeReplacesForXmlFile(result);
+        return done;
+    }
+    return result;
 }
 
 function makeReplacesForXmlFile(locale) {
@@ -486,7 +489,7 @@ function parseIosStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
         if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
             continue;
-        let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i]) + '";';
+        let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i], false) + '";';
         STRINGS.push(res);
     }
 }
