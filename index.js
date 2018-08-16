@@ -59,6 +59,7 @@ function getNewToken(oAuth2Client, callback) {
             fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
                 if (err) console.error(err);
                 console.log('Token stored to', TOKEN_PATH);
+                process.exit();
             });
             callback(oAuth2Client);
         });
