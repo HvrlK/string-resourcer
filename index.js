@@ -448,7 +448,7 @@ function parseAndroidStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
         if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
             continue;
-        let res = 'string name=' + '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '">' + makeLocalesGreatAgain(LOCALE[i]) + '</string';
+        let res = 'string name=' + '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '">' + makeLocalesGreatAgain(LOCALE[i], true) + '</string';
         res = '<' + res + '>';
         STRINGS.push(res);
     }
