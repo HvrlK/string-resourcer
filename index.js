@@ -110,7 +110,7 @@ function listMajors(auth) {
 
 
 
-const START_POINT_STRINGS = 4;
+const START_POINT_STRINGS = 3;
 const START_POINT_PLURALS = 3;
 const HOW_MANY_QUANTITIES = 6;
 
@@ -162,10 +162,10 @@ function askingInputData() {
 function makeStringsReadyToBeWrittenAndroid() {
     let result = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n\n';
     for (let i = 0; i< STRINGS.length; i++) {
-        if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
-            result += '\n';
-            result += '     <!--' +NAMESPACES[i]+'-->\n';
-        }
+        // if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
+        //     result += '\n';
+        //     result += '     <!--' +NAMESPACES[i]+'-->\n';
+        // }
 
         result += '    ' + STRINGS[i] + '\n';
     }
@@ -323,12 +323,12 @@ function writeFilesIos() {
 function makeStringsReadyToBeWrittenIos() {
     let result = '';
     for (let i = 0; i< STRINGS.length; i++) {
-        if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
-            if(NAMESPACES[i] !== '' && NAMESPACES[i] !== undefined){
-                result += '\n';
-                result += '//MARK: ' +NAMESPACES[i]+'\n';
-            }
-        }
+        // if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
+        //     if(NAMESPACES[i] !== '' && NAMESPACES[i] !== undefined){
+        //         result += '\n';
+        //         result += '//MARK: ' +NAMESPACES[i]+'\n';
+        //     }
+        // }
         result += STRINGS[i] + '\n';
     }
 
@@ -446,6 +446,11 @@ function makeReplacesForXmlFile(locale) {
 //android
 function parseAndroidStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
+        if (KEYS[i] && !LOCALE[i] && !PLATFORMS[i] && !NAMESPACES[i] && KEYS[i+1] && LOCALE[i+1] && PLATFORMS[i+1] && NAMESPACES[i+1]){
+            let res = '\n<!--' + KEYS[i].toString().substring(2, KEYS[i].length - 2) + ' -->';
+            STRINGS.push(res);
+            continue;
+        }
         if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
             continue;
         let res = 'string name=' + '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '">' + makeLocalesGreatAgain(LOCALE[i], true) + '</string';
@@ -463,8 +468,8 @@ function parsePluralsAndroid() {
         if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
             continue;
         if(writeHeader) {
-            res = '\n    <!-- ' + PLURAL_NAMESPACES[i] + '-->';
-            PLURALS.push(res);
+            // res = '\n    <!-- ' + PLURAL_NAMESPACES[i] + '-->';
+            // PLURALS.push(res);
             res = '<plurals ';
             res += 'name ='+ "'" + insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase() + "'>";
             PLURALS.push(res);
@@ -487,6 +492,11 @@ function parsePluralsAndroid() {
 //ios
 function parseIosStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
+        if (KEYS[i] && !LOCALE[i] && !PLATFORMS[i] && !NAMESPACES[i] && KEYS[i+1] && LOCALE[i+1] && PLATFORMS[i+1] && NAMESPACES[i+1]){
+            let res = '\n//MARK: ' + KEYS[i].toString().substring(2, KEYS[i].length - 2);
+            STRINGS.push(res);
+            continue;
+        }
         if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
             continue;
         let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i], false) + '";';
@@ -523,6 +533,12 @@ function filterByPlatform(platforms, namespaces, keys, locale) {
             NAMESPACES.push(namespaces[i].toString());
             KEYS.push(keys[i].toString());
             LOCALE.push(locale[i].toString());
+        }
+        if(!platforms[i].toString() && !!namespaces[i] && keys[i]){
+            PLATFORMS.push(null);
+            NAMESPACES.push(null);
+            KEYS.push(keys[i].toString());
+            LOCALE.push(null);
         }
     }
 }
