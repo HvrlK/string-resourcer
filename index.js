@@ -422,11 +422,11 @@ function makeReplacesForXmlFile(locale) {
             continue;
         }
         if(locale[i] === '"'){
-            result += '&quot;';
+            result += '\\"';
             continue;
         }
-        if(locale[i] === "'"){
-            result += '&apos;';
+        if(locale[i] === "'" || locale[i] === "’"){
+            result += "\\'";
             continue;
         }
         if(locale[i] === '\r' && locale[i+1] === '\n'){
