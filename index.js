@@ -250,54 +250,60 @@ function validateData(data) {
 
 //both
 async function getNeededData(auth) {
-    await askingInputData();
-    const sheets = google.sheets({version: 'v4', auth});
-    let checkForDataPresence = [];
-    for (let i = 1; i < 100; i++) {
-        checkForDataPresence = await getStringsData('Strings',sheets, 'A', i * 100 + START_POINT_STRINGS, (i - 1) * 100 + START_POINT_STRINGS);
-        if (!validateData(checkForDataPresence)){
-            COLUMN_LENGTH = (i - 1) * 100 + START_POINT_STRINGS;
-            break;
+    try {
+
+
+        await askingInputData();
+        const sheets = google.sheets({version: 'v4', auth});
+        let checkForDataPresence = [];
+        for (let i = 1; i < 100; i++) {
+            checkForDataPresence = await getStringsData('Strings', sheets, 'A', i * 100 + START_POINT_STRINGS, (i - 1) * 100 + START_POINT_STRINGS);
+            if (!validateData(checkForDataPresence)) {
+                COLUMN_LENGTH = (i - 1) * 100 + START_POINT_STRINGS;
+                break;
+            }
         }
-    }
-    console.log('PLURALS');
-    for (let i = 1; i < 100; i++) {
-        checkForDataPresence = await getStringsData('Plurals',sheets, 'D', i * 5 + START_POINT_PLURALS, (i - 1) * 5 + START_POINT_PLURALS);
-        if((i - 1) * 5 + START_POINT_PLURALS > 20)
-            console.log(checkForDataPresence);
-        if (!validateData(checkForDataPresence)){
-            PLURALS_COLUMN_LENGTH = (i - 1) * 5 + START_POINT_PLURALS;
-            break;
+        for (let i = 1; i < 100; i++) {
+            checkForDataPresence = await getStringsData('Plurals', sheets, 'D', i * 5 + START_POINT_PLURALS, (i - 1) * 5 + START_POINT_PLURALS);
+            if ((i - 1) * 5 + START_POINT_PLURALS > 20)
+                console.log(checkForDataPresence);
+            if (!validateData(checkForDataPresence)) {
+                PLURALS_COLUMN_LENGTH = (i - 1) * 5 + START_POINT_PLURALS;
+                break;
+            }
         }
-    }
-    const platforms = await getStringsData('Strings',sheets, 'A', COLUMN_LENGTH, START_POINT_STRINGS);
-    const namespaces = await getStringsData('Strings',sheets, 'B', COLUMN_LENGTH, START_POINT_STRINGS);
-    const keys = await getStringsData('Strings',sheets, 'C', COLUMN_LENGTH, START_POINT_STRINGS);
-    const locale = await getStringsData('Strings',sheets, LOCALE_COLUMN, COLUMN_LENGTH, START_POINT_STRINGS);
+        const platforms = await getStringsData('Strings', sheets, 'A', COLUMN_LENGTH, START_POINT_STRINGS);
+        const namespaces = await getStringsData('Strings', sheets, 'B', COLUMN_LENGTH, START_POINT_STRINGS);
+        const keys = await getStringsData('Strings', sheets, 'C', COLUMN_LENGTH, START_POINT_STRINGS);
+        const locale = await getStringsData('Strings', sheets, LOCALE_COLUMN, COLUMN_LENGTH, START_POINT_STRINGS);
 
 
-    const pluralsPlatform = await getStringsData('Plurals',sheets, 'A', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
-    const pluralsNamespace = await getStringsData('Plurals',sheets, 'B', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
-    const pluralsKeys = await getStringsData('Plurals',sheets, 'C', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
-    const pluralsQuantity = await getStringsData('Plurals',sheets, 'D', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
-    const pluralsLocale = await getStringsData('Plurals',sheets, PLURALS_LOCALE_COLUMN, PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+        const pluralsPlatform = await getStringsData('Plurals', sheets, 'A', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+        const pluralsNamespace = await getStringsData('Plurals', sheets, 'B', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+        const pluralsKeys = await getStringsData('Plurals', sheets, 'C', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+        const pluralsQuantity = await getStringsData('Plurals', sheets, 'D', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
+        const pluralsLocale = await getStringsData('Plurals', sheets, PLURALS_LOCALE_COLUMN, PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
 
 
-
-    filterByPlatform(platforms, namespaces, keys, locale);
-    filterPluralsByPlatform(pluralsPlatform, pluralsNamespace, pluralsKeys, pluralsQuantity, pluralsLocale);
-    if (PLATFORM.toUpperCase() === 'ANDROID') {
-        parseAndroidStrings();
-        parsePluralsAndroid();
-        writeFilesAndroid();
-    }
-    else if (PLATFORM.toUpperCase() === 'IOS') {
-        parseIosStrings();
-        parsePluralsIos();
-        writeFilesIos();
-    }
-    else {
-        console.log('Invalid platform');
+        filterByPlatform(platforms, namespaces, keys, locale);
+        filterPluralsByPlatform(pluralsPlatform, pluralsNamespace, pluralsKeys, pluralsQuantity, pluralsLocale);
+        if (PLATFORM.toUpperCase() === 'ANDROID') {
+            parseAndroidStrings();
+            parsePluralsAndroid();
+            writeFilesAndroid();
+        }
+        else if (PLATFORM.toUpperCase() === 'IOS') {
+            parseIosStrings();
+            parsePluralsIos();
+            writeFilesIos();
+        }
+        else {
+            console.log('Invalid platform');
+        }
+    }catch (e) {
+        console.log('SCRIPT EXECUTION FAILED');
+        console.log(e);
+        process.exit();
     }
 }
 
