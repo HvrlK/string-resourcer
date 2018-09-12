@@ -146,7 +146,7 @@ function askingInputData() {
             rl.close();
 
             const data = code.split(',');
-            PLATFORM = data[0];
+            PLATFORM = data[0].toUpperCase();
             DOCUMENT_ID = data[1];
             LOCALE_COLUMN = data[2];
             LOCALE_NAME = data[3];
