@@ -71,7 +71,6 @@ function getNewToken(oAuth2Client, callback) {
 
 const START_POINT_STRINGS = 3;
 const START_POINT_PLURALS = 3;
-const HOW_MANY_QUANTITIES = 6;
 
 
 let DOCUMENT_ID = '';
@@ -103,7 +102,6 @@ function askingInputData() {
     return new Promise(resolve => {
         rl.question('Enter platform(IOS/ANDROID), document id, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C): ', (code) => {
             rl.close();
-
             const data = code.split(',');
             PLATFORM = data[0].toUpperCase();
             DOCUMENT_ID = data[1];
@@ -128,7 +126,7 @@ function makeStringsReadyToBeWrittenAndroid() {
 
         result += '    ' + STRINGS[i] + '\n';
     }
-    for (let i = 0; i<PLURALS.length; i++) {
+    for (let i = 0;  i< PLURALS.length; i++) {
         if (PLURALS[i].startsWith('<plurals') || PLURALS[i].startsWith('</plurals') || PLURALS[i].startsWith('\n<!--'))
             result += '    ';
         else
@@ -224,8 +222,6 @@ async function getNeededData(auth) {
         }
         for (let i = 1; i < 100; i++) {
             checkForDataPresence = await getStringsData('Plurals', sheets, 'D', i * 5 + START_POINT_PLURALS, (i - 1) * 5 + START_POINT_PLURALS);
-            if ((i - 1) * 5 + START_POINT_PLURALS > 20)
-                console.log(checkForDataPresence);
             if (!validateData(checkForDataPresence)) {
                 PLURALS_COLUMN_LENGTH = (i - 1) * 5 + START_POINT_PLURALS;
                 break;
@@ -248,12 +244,22 @@ async function getNeededData(auth) {
         filterPluralsByPlatform(pluralsPlatform, pluralsNamespace, pluralsKeys, pluralsQuantity, pluralsLocale);
         if (PLATFORM.toUpperCase() === 'ANDROID') {
             parseAndroidStrings();
-            parsePluralsAndroid();
+            try {
+                parsePluralsAndroid();
+            }catch (e) {
+                console.log('No plurals');
+            }
+
             writeFilesAndroid();
         }
         else if (PLATFORM.toUpperCase() === 'IOS') {
             parseIosStrings();
-            parsePluralsIos();
+            try{
+                parsePluralsIos();
+            }catch (e) {
+                console.log('No plurals');
+            }
+
             writeFilesIos();
         }
         else {
@@ -279,10 +285,13 @@ function writeFilesIos() {
         if (err) throw err;
         console.log('Saved');
     });
-    fs.writeFile('./' + name + '.lproj' + '/Localizable' + '.stringsdict', makePluralsReadyToBeWrittenIos(), function (err) {
-        if (err) throw err;
-        console.log('Saved');
-    });
+    if(PLURAL_NAMESPACES.length !== 0) {
+        fs.writeFile('./' + name + '.lproj' + '/Localizable' + '.stringsdict', makePluralsReadyToBeWrittenIos(), function (err) {
+            if (err) throw err;
+            console.log('Saved');
+        });
+    }
+
 }
 
 function makeStringsReadyToBeWrittenIos() {
