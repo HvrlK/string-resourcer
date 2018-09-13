@@ -28,8 +28,25 @@ function authorize(credentials, callback) {
     // Check if we have previously stored a token.
     fs.readFile(TOKEN_PATH, (err, token) => {
         if (err) return getNewToken(oAuth2Client, callback);
-        oAuth2Client.setCredentials(JSON.parse(token));
-        callback(oAuth2Client);
+        if (JSON.parse(token).expiry_date - 10000 <= Date.now()) {
+            oAuth2Client.refreshToken(JSON.parse(token).refresh_token).then((accessToken) => {
+                const updatedToken = JSON.parse(token);
+                updatedToken.access_token = accessToken.tokens.access_token;
+                updatedToken.expiry_date = accessToken.tokens.expiry_date;
+                oAuth2Client.setCredentials(updatedToken);
+                fs.writeFile(TOKEN_PATH, JSON.stringify(updatedToken), (err) => {
+                    if (err) {console.error(err); process.exit(1);}
+                    console.log('updated access token');
+                    callback(oAuth2Client);
+                });
+            });
+        }
+        else {
+            oAuth2Client.setCredentials(JSON.parse(token));
+            callback(oAuth2Client);
+        }
+
+
     });
 }
 
@@ -231,7 +248,6 @@ async function getNeededData(auth) {
         const namespaces = await getStringsData('Strings', sheets, 'B', COLUMN_LENGTH, START_POINT_STRINGS);
         const keys = await getStringsData('Strings', sheets, 'C', COLUMN_LENGTH, START_POINT_STRINGS);
         const locale = await getStringsData('Strings', sheets, LOCALE_COLUMN, COLUMN_LENGTH, START_POINT_STRINGS);
-
 
         const pluralsPlatform = await getStringsData('Plurals', sheets, 'A', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsNamespace = await getStringsData('Plurals', sheets, 'B', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
@@ -506,14 +522,6 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
 
 //both
 function filterByPlatform(platforms, namespaces, keys, locale) {
-    console.log('platforms');
-    console.log(platforms);
-    console.log('namespaces');
-    console.log(namespaces);
-    console.log('keys');
-    console.log(keys);
-    console.log('locale');
-    console.log(locale);
     for (let i = 0; i < platforms.length; i++) {
         if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
             PLATFORMS.push(platforms[i].toString());
