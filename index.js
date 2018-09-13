@@ -230,6 +230,7 @@ async function getNeededData(auth) {
         await askingInputData();
         const sheets = google.sheets({version: 'v4', auth});
         let checkForDataPresence = [];
+        console.log('1');
         for (let i = 1; i < 100; i++) {
             checkForDataPresence = await getStringsData('Strings', sheets, 'A', i * 100 + START_POINT_STRINGS, (i - 1) * 100 + START_POINT_STRINGS);
             if (!validateData(checkForDataPresence)) {
@@ -237,6 +238,7 @@ async function getNeededData(auth) {
                 break;
             }
         }
+        console.log('2');
         for (let i = 1; i < 100; i++) {
             checkForDataPresence = await getStringsData('Plurals', sheets, 'D', i * 5 + START_POINT_PLURALS, (i - 1) * 5 + START_POINT_PLURALS);
             if (!validateData(checkForDataPresence)) {
@@ -244,17 +246,18 @@ async function getNeededData(auth) {
                 break;
             }
         }
+        console.log('3');
         const platforms = await getStringsData('Strings', sheets, 'A', COLUMN_LENGTH, START_POINT_STRINGS);
         const namespaces = await getStringsData('Strings', sheets, 'B', COLUMN_LENGTH, START_POINT_STRINGS);
         const keys = await getStringsData('Strings', sheets, 'C', COLUMN_LENGTH, START_POINT_STRINGS);
         const locale = await getStringsData('Strings', sheets, LOCALE_COLUMN, COLUMN_LENGTH, START_POINT_STRINGS);
-
+        console.log('4');
         const pluralsPlatform = await getStringsData('Plurals', sheets, 'A', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsNamespace = await getStringsData('Plurals', sheets, 'B', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsKeys = await getStringsData('Plurals', sheets, 'C', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsQuantity = await getStringsData('Plurals', sheets, 'D', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsLocale = await getStringsData('Plurals', sheets, PLURALS_LOCALE_COLUMN, PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
-
+        console.log('5');
 
         filterByPlatform(platforms, namespaces, keys, locale);
         try {
