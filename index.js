@@ -501,6 +501,14 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
 
 //both
 function filterByPlatform(platforms, namespaces, keys, locale) {
+    console.log('platforms');
+    console.log(platforms);
+    console.log('namespaces');
+    console.log(namespaces);
+    console.log('keys');
+    console.log(keys);
+    console.log('locale');
+    console.log(locale);
     for (let i = 0; i < platforms.length; i++) {
         if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
             PLATFORMS.push(platforms[i].toString());
