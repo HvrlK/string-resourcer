@@ -5,7 +5,7 @@ const {google} = require('googleapis');
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = 'token.json';
-
+console.log('start ' + Date.now() / 1000);
 // Load client secrets from a local file.
 console.log('Reading credentials');
 fs.readFile('credentials.json', (err, content) => {
@@ -285,6 +285,7 @@ async function getNeededData(auth) {
             }
 
             writeFilesIos();
+            console.log('finish ' + Date.now() / 1000);
         }
         else {
             console.log('Invalid platform');
