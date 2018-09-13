@@ -241,7 +241,12 @@ async function getNeededData(auth) {
 
 
         filterByPlatform(platforms, namespaces, keys, locale);
-        filterPluralsByPlatform(pluralsPlatform, pluralsNamespace, pluralsKeys, pluralsQuantity, pluralsLocale);
+        try {
+            filterPluralsByPlatform(pluralsPlatform, pluralsNamespace, pluralsKeys, pluralsQuantity, pluralsLocale);
+        }catch (e) {
+            console.log('NO plurals');
+        }
+
         if (PLATFORM.toUpperCase() === 'ANDROID') {
             parseAndroidStrings();
             try {
