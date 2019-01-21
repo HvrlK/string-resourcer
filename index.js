@@ -322,6 +322,7 @@ function writeFilesIos() {
 
 function makeStringsReadyToBeWrittenIos() {
     let result = '';
+
     for (let i = 0; i< STRINGS.length; i++) {
         // if ((i===0) || (i!==0 && NAMESPACES[i-1].toString() !== NAMESPACES[i].toString())){
         //     if(NAMESPACES[i] !== '' && NAMESPACES[i] !== undefined){
