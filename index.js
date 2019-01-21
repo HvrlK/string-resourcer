@@ -494,7 +494,8 @@ function parsePluralsAndroid() {
 function parseIosStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
         if (KEYS[i] && !LOCALE[i] && !PLATFORMS[i] && !NAMESPACES[i] && KEYS[i+1] && LOCALE[i+1] && PLATFORMS[i+1] && NAMESPACES[i+1]){
-            let res = '\n//MARK: ' + KEYS[i].toString().substring(2, KEYS[i].length - 2);
+            STRINGS.push('');
+            let res = '//MARK: ' + KEYS[i].toString().substring(2, KEYS[i].length - 2);
             STRINGS.push(res);
             continue;
         }
