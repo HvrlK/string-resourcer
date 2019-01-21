@@ -537,7 +537,7 @@ function filterByPlatform(platforms, namespaces, keys, locale) {
         if(!platforms[i].toString() && !!namespaces[i] && keys[i]){
             PLATFORMS.push(null);
             NAMESPACES.push(null);
-            KEYS.push(keys[i].toString());
+            KEYS.push(keys[i].toString().replace('\n', '\\n'));
             LOCALE.push(null);
         }
     }
