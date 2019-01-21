@@ -329,7 +329,7 @@ function makeStringsReadyToBeWrittenIos() {
         //         result += '//MARK: ' +NAMESPACES[i]+'\n';
         //     }
         // }
-        result += STRINGS[i] + '\n';
+        result += STRINGS[i].replace('\n', '\\n') + '\n';
     }
 
     return result;
