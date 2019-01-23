@@ -533,14 +533,15 @@ function filterByPlatform(platforms, namespaces, keys, locale) {
         if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
             PLATFORMS.push(platforms[i].toString());
             NAMESPACES.push(namespaces[i].toString());
-            KEYS.push(keys[i].toString());
-            LOCALE.push(locale[i].toString());
+            KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+            LOCALE.push(locale[i].toString().toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
         }
         if(!platforms[i].toString() && !!namespaces[i] && keys[i]){
             PLATFORMS.push(null);
             NAMESPACES.push(null);
-            KEYS.push(keys[i].toString().replace('\n', '\\n'));
+            KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+            console.log(KEYS[KEYS.length - 1]);
             LOCALE.push(null);
         }
-    }
+    }//IOS,1iGmKHDSYiIzuw5M4h88boy-UTsT_2IPT08AiCAAtdj4,D,base,E
 }
