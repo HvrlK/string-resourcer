@@ -88,7 +88,7 @@ function getNewToken(oAuth2Client, callback) {
 
 const START_POINT_STRINGS = 3;
 const START_POINT_PLURALS = 3;
-
+const START_POINT_PERMISSIONS = 3;
 
 let DOCUMENT_ID = '';
 let PLATFORM = '';
@@ -97,6 +97,8 @@ let LOCALE_NAME = '';
 let COLUMN_LENGTH = '';
 let PLURALS_LOCALE_COLUMN = '';
 let PLURALS_COLUMN_LENGTH = '';
+let PERMISSIONS_COLUMN = '';
+let PERMISSIONS_COLUMN_LENGTH = '';
 
 let PLATFORMS = [];
 let NAMESPACES = [];
@@ -111,6 +113,12 @@ let PLURAL_NAMESPACES = [];
 let PLURAL_KEYS = [];
 let PLURAL_QUANTITY = [];
 let PLURAL_LOCALE = [];
+
+let PERMISSIONS_PLATFORMS = [];
+let PERMISSIONS_KEYS = [];
+let PERMISSIONS_LOCALE = [];
+let PERMISSIONS_IOS = [];
+
 //both
 function askingInputData() {
     const rl = readline.createInterface({
@@ -118,7 +126,7 @@ function askingInputData() {
         output: process.stdout,
     });
     return new Promise(resolve => {
-        rl.question('Enter platform(IOS/ANDROID), document id, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C): ', (code) => {
+        rl.question('Enter platform(IOS/ANDROID), document id, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C), locale column name in iOS Permissions (A/B/C) OPTIONAL!!!: ', (code) => {
             rl.close();
             const data = code.split(',');
             PLATFORM = data[0].toUpperCase();
@@ -126,6 +134,11 @@ function askingInputData() {
             LOCALE_COLUMN = data[2];
             LOCALE_NAME = data[3];
             PLURALS_LOCALE_COLUMN = data[4];
+            try {
+                PERMISSIONS_COLUMN = data[5];
+            }catch (e) {
+                PERMISSIONS_COLUMN = '';
+            }
             resolve();
         })
     });
@@ -231,7 +244,7 @@ async function getNeededData(auth) {
         await askingInputData();
         const sheets = google.sheets({version: 'v4', auth});
         let checkForDataPresence = [];
-        console.log('1');
+        console.log('Received google sheet info');
         for (let i = 1; i < 100; i++) {
             checkForDataPresence = await getStringsData('Strings', sheets, 'A', i * 100 + START_POINT_STRINGS, (i - 1) * 100 + START_POINT_STRINGS);
             if (!validateData(checkForDataPresence)) {
@@ -239,7 +252,7 @@ async function getNeededData(auth) {
                 break;
             }
         }
-        console.log('2');
+        console.log('Successfully calculated strings sheet length');
         for (let i = 1; i < 100; i++) {
             checkForDataPresence = await getStringsData('Plurals', sheets, 'D', i * 5 + START_POINT_PLURALS, (i - 1) * 5 + START_POINT_PLURALS);
             if (!validateData(checkForDataPresence)) {
@@ -247,24 +260,47 @@ async function getNeededData(auth) {
                 break;
             }
         }
-        console.log('3');
+        console.log('Successfully calculated plurals sheet length');
+        if (PLATFORM.toUpperCase() === 'IOS' && PERMISSIONS_COLUMN) {
+            for (let i = 1; i < 100; i++) {
+                checkForDataPresence = await getStringsData('iOS Permissions', sheets, 'D', i * 5 + START_POINT_PERMISSIONS, (i - 1) * 5 + START_POINT_PERMISSIONS);
+                if (!validateData(checkForDataPresence)) {
+                    PERMISSIONS_COLUMN_LENGTH = (i - 1) * 5 + START_POINT_PERMISSIONS;
+                    break;
+                }
+            }
+            console.log('Successfully calculated permissions sheet length');
+        }
         const platforms = await getStringsData('Strings', sheets, 'A', COLUMN_LENGTH, START_POINT_STRINGS);
         const namespaces = await getStringsData('Strings', sheets, 'B', COLUMN_LENGTH, START_POINT_STRINGS);
         const keys = await getStringsData('Strings', sheets, 'C', COLUMN_LENGTH, START_POINT_STRINGS);
         const locale = await getStringsData('Strings', sheets, LOCALE_COLUMN, COLUMN_LENGTH, START_POINT_STRINGS);
-        console.log('4');
+        console.log('Received data from strings sheet');
         const pluralsPlatform = await getStringsData('Plurals', sheets, 'A', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsNamespace = await getStringsData('Plurals', sheets, 'B', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsKeys = await getStringsData('Plurals', sheets, 'C', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsQuantity = await getStringsData('Plurals', sheets, 'D', PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
         const pluralsLocale = await getStringsData('Plurals', sheets, PLURALS_LOCALE_COLUMN, PLURALS_COLUMN_LENGTH, START_POINT_PLURALS);
-        console.log('5');
+        console.log('Received data from plurals sheet');
+        let permissionsPlatform;
+        let permissionsKey;
+        let permissionsLocale;
+        if (PLATFORM.toUpperCase() === 'IOS' && PERMISSIONS_COLUMN) {
+            permissionsPlatform = await getStringsData('iOS Permissions', sheets, 'A', PERMISSIONS_COLUMN_LENGTH, START_POINT_PERMISSIONS);
+            permissionsKey = await getStringsData('iOS Permissions', sheets, 'C', PERMISSIONS_COLUMN_LENGTH, START_POINT_PERMISSIONS);
+            permissionsLocale = await getStringsData('iOS Permissions', sheets, PERMISSIONS_COLUMN, PERMISSIONS_COLUMN_LENGTH, START_POINT_PERMISSIONS);
+        }
 
         filterByPlatform(platforms, namespaces, keys, locale);
         try {
             filterPluralsByPlatform(pluralsPlatform, pluralsNamespace, pluralsKeys, pluralsQuantity, pluralsLocale);
         }catch (e) {
             console.log('NO plurals');
+        }
+        try {
+            filterIosPermissionsByPlatform(permissionsPlatform, permissionsKey, permissionsLocale);
+        }catch (e) {
+            console.log('NO Permissions');
         }
 
         if (PLATFORM.toUpperCase() === 'ANDROID') {
@@ -283,6 +319,11 @@ async function getNeededData(auth) {
                 parsePluralsIos();
             }catch (e) {
                 console.log('No plurals');
+            }
+            try {
+                parsePermissionsIos();
+            }catch (e) {
+                console.log('No permissions');
             }
 
             writeFilesIos();
@@ -309,15 +350,28 @@ function writeFilesIos() {
         fs.mkdirSync('./' + name + '.lproj');
     fs.writeFile('./' + name + '.lproj' + '/Localizable' + '.strings', makeStringsReadyToBeWrittenIos(), function (err) {
         if (err) throw err;
-        console.log('Saved');
+        console.log('Strings saved');
     });
     if(PLURAL_NAMESPACES.length !== 0) {
         fs.writeFile('./' + name + '.lproj' + '/Localizable' + '.stringsdict', makePluralsReadyToBeWrittenIos(), function (err) {
             if (err) throw err;
-            console.log('Saved');
+            console.log('Plurals saved');
         });
     }
+    if (PERMISSIONS_IOS.length !== 0) {
+        fs.writeFile('./' + name + '.lproj' + '/InfoPlist.strings', makePermissionsReadyToBeWritten(), function (err) {
+            if (err) throw err;
+            console.log('Permissions saved');
+        })
+    }
+}
 
+function makePermissionsReadyToBeWritten() {
+    let res = '';
+    for (let i = 0; i < PERMISSIONS_IOS.length; i++) {
+        res += PERMISSIONS_IOS[i] + '\n';
+    }
+    return res;
 }
 
 function makeStringsReadyToBeWrittenIos() {
@@ -381,6 +435,34 @@ function parsePluralsIos() {
             PLURALS.push(res);
             writeHeader = true;
         }
+    }
+}
+
+//ios
+function parseIosStrings() {
+    for (let i = 0; i < PLATFORMS.length; i++) {
+        if (KEYS[i] && !LOCALE[i] && !PLATFORMS[i] && !NAMESPACES[i] && KEYS[i+1] && LOCALE[i+1] && PLATFORMS[i+1] && NAMESPACES[i+1]){
+            STRINGS.push('');
+            let res = '//MARK: ' + KEYS[i].toString().substring(2, KEYS[i].length - 2);
+            STRINGS.push(res);
+            continue;
+        }
+        if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
+            continue;
+        let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i], false) + '";';
+        STRINGS.push(res);
+    }
+}
+
+//ios
+function parsePermissionsIos() {
+    let res = '';
+    for (let i = 0; i < PERMISSIONS_PLATFORMS.length; i++) {
+        res = '';
+        if (!PERMISSIONS_PLATFORMS[i] || !PERMISSIONS_LOCALE[i] || !PERMISSIONS_KEYS[i])
+            continue;
+        res = '"' + PERMISSIONS_KEYS[i] + '" = "' + PERMISSIONS_LOCALE[i] + '";';
+        PERMISSIONS_IOS.push(res);
     }
 }
 
@@ -490,22 +572,6 @@ function parsePluralsAndroid() {
     }
 }
 
-//ios
-function parseIosStrings() {
-    for (let i = 0; i < PLATFORMS.length; i++) {
-        if (KEYS[i] && !LOCALE[i] && !PLATFORMS[i] && !NAMESPACES[i] && KEYS[i+1] && LOCALE[i+1] && PLATFORMS[i+1] && NAMESPACES[i+1]){
-            STRINGS.push('');
-            let res = '//MARK: ' + KEYS[i].toString().substring(2, KEYS[i].length - 2);
-            STRINGS.push(res);
-            continue;
-        }
-        if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
-            continue;
-        let res = '"' + insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase()) + '" = "' + makeLocalesGreatAgain(LOCALE[i], false) + '";';
-        STRINGS.push(res);
-    }
-}
-
 //both
 function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
     let platform = '';
@@ -527,20 +593,40 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
     }
 }
 
+function filterIosPermissionsByPlatform(platforms, keys, locale) {
+    for (let i = 0; i < platforms.length; i++) {
+        if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
+            PERMISSIONS_PLATFORMS.push(platforms[i].toString());
+            if (PLATFORM.toUpperCase() === 'IOS') {
+                PERMISSIONS_KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+                PERMISSIONS_LOCALE.push(locale[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+            }else {
+                PERMISSIONS_KEYS.push(keys[i].toString());
+                PERMISSIONS_LOCALE.push(locale[i].toString());
+            }
+        }
+    }
+}
+
 //both
 function filterByPlatform(platforms, namespaces, keys, locale) {
     for (let i = 0; i < platforms.length; i++) {
         if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
             PLATFORMS.push(platforms[i].toString());
-            NAMESPACES.push(namespaces[i].toString());
-            KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
-            LOCALE.push(locale[i].toString().toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+            if (PLATFORM.toUpperCase() === 'IOS') {
+                NAMESPACES.push(namespaces[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+                KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+                LOCALE.push(locale[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
+            }else {
+                NAMESPACES.push(namespaces[i].toString());
+                KEYS.push(keys[i].toString());
+                LOCALE.push(locale[i].toString());
+            }
         }
         if(!platforms[i].toString() && !!namespaces[i] && keys[i]){
             PLATFORMS.push(null);
             NAMESPACES.push(null);
             KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
-            console.log(KEYS[KEYS.length - 1]);
             LOCALE.push(null);
         }
     }//IOS,1iGmKHDSYiIzuw5M4h88boy-UTsT_2IPT08AiCAAtdj4,D,base,E
