@@ -95,6 +95,7 @@ const START_POINT_STRINGS = 3;
 const START_POINT_PLURALS = 3;
 const START_POINT_PERMISSIONS = 3;
 
+let API_KEY = '';
 let DOCUMENT_ID = '';
 let PLATFORM = '';
 let LOCALE_COLUMN = '';
@@ -131,16 +132,17 @@ function askingInputData() {
         output: process.stdout,
     });
     return new Promise(resolve => {
-        rl.question('Enter platform(IOS/ANDROID), document id, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C), locale column name in iOS Permissions (A/B/C) OPTIONAL!!!: ', (code) => {
+        rl.question('Enter API key, platform(IOS/ANDROID), document id, locale column name in STRINGS (A/B/C), locale name (de/ru/base), locale column name in PLURALS (A/B/C), locale column name in iOS Permissions (A/B/C) OPTIONAL!!!: ', (code) => {
             rl.close();
             const data = code.split(',');
-            PLATFORM = data[0].toUpperCase();
-            DOCUMENT_ID = data[1];
-            LOCALE_COLUMN = data[2];
-            LOCALE_NAME = data[3];
-            PLURALS_LOCALE_COLUMN = data[4];
+            API_KEY = data[0];
+            PLATFORM = data[1].toUpperCase();
+            DOCUMENT_ID = data[2];
+            LOCALE_COLUMN = data[3];
+            LOCALE_NAME = data[4];
+            PLURALS_LOCALE_COLUMN = data[5];
             try {
-                PERMISSIONS_COLUMN = data[5];
+                PERMISSIONS_COLUMN = data[6];
             }catch (e) {
                 PERMISSIONS_COLUMN = '';
             }
@@ -211,7 +213,7 @@ function writeFilesAndroid() {
 //both
 async function getStringsData(tableName, sheets, symbol, length, start) {
 
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${DOCUMENT_ID}/values/${tableName}!${symbol}${start}:${symbol}?key=AIzaSyCeaO7TKS1uTqi31KFlJwoqyiZlSknXK8o`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${DOCUMENT_ID}/values/${tableName}!${symbol}${start}:${symbol}?key=${API_KEY}`;
     console.log(url);
     try {
         const result = await axios.get(url);
