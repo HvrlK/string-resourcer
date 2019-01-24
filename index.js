@@ -1,11 +1,14 @@
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
+const axios = require('axios');
+
+console.log('start ' + Date.now() / 1000);
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+/*const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = 'token.json';
-console.log('start ' + Date.now() / 1000);
+
 // Load client secrets from a local file.
 console.log('Reading credentials');
 fs.readFile('credentials.json', (err, content) => {
@@ -13,6 +16,8 @@ fs.readFile('credentials.json', (err, content) => {
     // Authorize a client with credentials, then call the Google Sheets API.
     authorize(JSON.parse(content), getNeededData);
 });
+*/
+getNeededData();
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -204,7 +209,17 @@ function writeFilesAndroid() {
 
 
 //both
-function getStringsData(tableName, sheets, symbol, length, start) {
+async function getStringsData(tableName, sheets, symbol, length, start) {
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${DOCUMENT_ID}/values/${tableName}!${symbol}${start}:${symbol}?key=AIzaSyCeaO7TKS1uTqi31KFlJwoqyiZlSknXK8o`;
+    console.log(url);
+    try {
+        const result = await axios.get(url);
+        return result.data.values;
+      } catch (error) {
+        console.error(error)
+      }
+/*
     return new Promise(resolve => {
         sheets.spreadsheets.values.get({
             spreadsheetId: DOCUMENT_ID,
@@ -220,6 +235,7 @@ function getStringsData(tableName, sheets, symbol, length, start) {
             }
         });
     });
+    */
 }
 
 function validateData(data) {
@@ -245,30 +261,30 @@ async function getNeededData(auth) {
         const sheets = google.sheets({version: 'v4', auth});
         let checkForDataPresence = [];
         console.log('Received google sheet info');
-        for (let i = 1; i < 100; i++) {
+        /*for (let i = 1; i < 100; i++) {
             checkForDataPresence = await getStringsData('Strings', sheets, 'A', i * 100 + START_POINT_STRINGS, (i - 1) * 100 + START_POINT_STRINGS);
             if (!validateData(checkForDataPresence)) {
                 COLUMN_LENGTH = (i - 1) * 100 + START_POINT_STRINGS;
                 break;
             }
-        }
+        }*/
         console.log('Successfully calculated strings sheet length');
-        for (let i = 1; i < 100; i++) {
+        /*for (let i = 1; i < 100; i++) {
             checkForDataPresence = await getStringsData('Plurals', sheets, 'D', i * 5 + START_POINT_PLURALS, (i - 1) * 5 + START_POINT_PLURALS);
             if (!validateData(checkForDataPresence)) {
                 PLURALS_COLUMN_LENGTH = (i - 1) * 5 + START_POINT_PLURALS;
                 break;
             }
-        }
+        }*/
         console.log('Successfully calculated plurals sheet length');
         if (PLATFORM.toUpperCase() === 'IOS' && PERMISSIONS_COLUMN) {
-            for (let i = 1; i < 100; i++) {
+            /*for (let i = 1; i < 100; i++) {
                 checkForDataPresence = await getStringsData('iOS Permissions', sheets, 'D', i * 5 + START_POINT_PERMISSIONS, (i - 1) * 5 + START_POINT_PERMISSIONS);
                 if (!validateData(checkForDataPresence)) {
                     PERMISSIONS_COLUMN_LENGTH = (i - 1) * 5 + START_POINT_PERMISSIONS;
                     break;
                 }
-            }
+            }*/
             console.log('Successfully calculated permissions sheet length');
         }
         const platforms = await getStringsData('Strings', sheets, 'A', COLUMN_LENGTH, START_POINT_STRINGS);
