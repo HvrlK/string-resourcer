@@ -213,14 +213,30 @@ function writeFilesAndroid() {
 //both
 async function getStringsData(tableName, sheets, symbol, length, start) {
 
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${DOCUMENT_ID}/values/${tableName}!${symbol}${start}:${symbol}?key=${API_KEY}`;
-    console.log(url);
-    try {
-        const result = await axios.get(url);
-        return result.data.values;
-      } catch (error) {
-        console.error(error)
-      }
+    let result;
+
+    for (let i = 0; i < 5; i++) {
+        if (i != 0) {
+            const seconds = 2 ** i;
+            console.log(`Network problem, retrying in ${seconds} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+        }
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${DOCUMENT_ID}/values/${tableName}!${symbol}${start}:${symbol}?key=${API_KEY}`;
+        console.log(url);
+        try {
+            result = await axios.get(url);
+        } catch (error) {
+        }
+
+        if (result) break;
+    }
+
+    if (!result) {
+        console.log('CANNOT GET DATA FROM GOOGLE');
+        process.exit(1);
+    }
+
+    return result.data.values;
 /*
     return new Promise(resolve => {
         sheets.spreadsheets.values.get({
