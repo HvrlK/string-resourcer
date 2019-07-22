@@ -651,13 +651,13 @@ function filterByPlatform(platforms, namespaces, keys, locale) {
                 NAMESPACES.push(namespaces[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
                 KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
                 LOCALE.push(locale[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
-            }else {
+            } else {
                 NAMESPACES.push(namespaces[i].toString());
                 KEYS.push(keys[i].toString());
                 LOCALE.push(locale[i].toString());
             }
         }
-        if(!platforms[i].toString() && !!namespaces[i] && keys[i]){
+        if (!platforms[i].toString() && !!namespaces[i] && keys[i]) {
             PLATFORMS.push(null);
             NAMESPACES.push(null);
             KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
