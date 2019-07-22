@@ -11,6 +11,7 @@ PLATFORM_KEYS = {
     WEB: ['WEB', 'ALL'],
     ANDROID: ['ANDROID', 'ALL', 'BOTH', 'MOBILE'],
     IOS: ['IOS', 'ALL', 'BOTH', 'MOBILE']
+};
 
 // If modifying these scopes, delete token.json.
 /*const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
