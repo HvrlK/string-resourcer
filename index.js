@@ -5,6 +5,11 @@ const axios = require('axios');
 
 console.log('start ' + Date.now() / 1000);
 
+PLATFORM_KEYS = {
+    WEB: ['WEB', 'ALL'],
+    ANDROID: ['ANDROID', 'ALL', 'BOTH', 'MOBILE'],
+    IOS: ['IOS', 'ALL', 'BOTH', 'MOBILE']
+};
 // If modifying these scopes, delete token.json.
 /*const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = 'token.json';
@@ -617,7 +622,7 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
             namesp = namespace[i].toString();
             k = key[i].toString();
         }
-        if(platform.toUpperCase() === PLATFORM.toUpperCase() || platform.toUpperCase() === 'BOTH'){
+        if(PLATFORM_KEYS[PLATFORM.toUpperCase()].indexOf(platform.toUpperCase()) >= 0) {
             PLURAL_PLAFORMS.push(platform);
             PLURAL_KEYS.push(k);
             PLURAL_LOCALE.push(locale[i].toString());
@@ -629,7 +634,7 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
 
 function filterIosPermissionsByPlatform(platforms, keys, locale) {
     for (let i = 0; i < platforms.length; i++) {
-        if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
+        if (PLATFORM_KEYS[PLATFORM.toUpperCase()].indexOf(platforms[i].toString().toUpperCase()) >= 0) {
             PERMISSIONS_PLATFORMS.push(platforms[i].toString());
             if (PLATFORM.toUpperCase() === 'IOS') {
                 PERMISSIONS_KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
@@ -645,7 +650,7 @@ function filterIosPermissionsByPlatform(platforms, keys, locale) {
 //both
 function filterByPlatform(platforms, namespaces, keys, locale) {
     for (let i = 0; i < platforms.length; i++) {
-        if (platforms[i].toString().toUpperCase() === PLATFORM.toUpperCase() || platforms[i].toString().toUpperCase() === 'BOTH') {
+        if (PLATFORM_KEYS[PLATFORM.toUpperCase()].indexOf(platforms[i].toString().toUpperCase()) >= 0) {
             PLATFORMS.push(platforms[i].toString());
             if (PLATFORM.toUpperCase() === 'IOS') {
                 NAMESPACES.push(namespaces[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
