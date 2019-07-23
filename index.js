@@ -633,7 +633,9 @@ function parseWebStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
         if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
             continue;
-        res[insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase())] = makeLocalesGreatAgain(LOCALE[i], false);
+        let data = makeLocalesGreatAgain(LOCALE[i], false);
+        data = data.replace(/\\n/g, '\n').replace(/\\r/g, '\r');
+        res[insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase())] = data;
     }
     STRINGS.push(JSON.stringify(res, null, '\t'));
 }
