@@ -5,6 +5,8 @@ const axios = require('axios');
 
 console.log('start ' + Date.now() / 1000);
 
+const ALL_KEYS = ['ALL', 'BOTH'];
+
 PLATFORM_KEYS = {
     WEB: ['WEB', 'ALL'],
     ANDROID: ['ANDROID', 'ALL', 'BOTH', 'MOBILE'],
@@ -34,7 +36,7 @@ getNeededData();
 function authorize(credentials, callback) {
     const {client_secret, client_id, redirect_uris} = credentials.installed;
     const oAuth2Client = new google.auth.OAuth2(
-        client_id, client_secret, redirect_uris[0]);
+      client_id, client_secret, redirect_uris[0]);
 
     // Check if we have previously stored a token.
     fs.readFile(TOKEN_PATH, (err, token) => {
@@ -243,23 +245,23 @@ async function getStringsData(tableName, sheets, symbol, length, start) {
     }
 
     return result.data.values;
-/*
-    return new Promise(resolve => {
-        sheets.spreadsheets.values.get({
-            spreadsheetId: DOCUMENT_ID,
-            range: tableName + '!' + symbol + start + ':' + symbol + '' + length,
-        }, (err, res) => {
-            if (err) return resolve(undefined);
-            const rows = res.data.values;
-            if (rows.length) {
-                resolve(rows);
-            } else {
-                resolve();
-                console.log('No data found.');
-            }
+    /*
+        return new Promise(resolve => {
+            sheets.spreadsheets.values.get({
+                spreadsheetId: DOCUMENT_ID,
+                range: tableName + '!' + symbol + start + ':' + symbol + '' + length,
+            }, (err, res) => {
+                if (err) return resolve(undefined);
+                const rows = res.data.values;
+                if (rows.length) {
+                    resolve(rows);
+                } else {
+                    resolve();
+                    console.log('No data found.');
+                }
+            });
         });
-    });
-    */
+        */
 }
 
 function validateData(data) {
@@ -369,6 +371,15 @@ async function getNeededData(auth) {
             writeFilesIos();
             console.log('finish ' + Date.now() / 1000);
         }
+        else if (PLATFORM.toUpperCase() === 'WEB') {
+            parseWebStrings();
+            try{
+                parsePluralsWeb();
+            }catch (e) {
+                console.log('No plurals');
+            }
+            writeFilesWeb();
+        }
         else {
             console.log('Invalid platform');
         }
@@ -406,6 +417,24 @@ function writeFilesIos() {
     }
 }
 
+function writeFilesWeb() {
+    const name = LOCALE_NAME.toLowerCase();
+    if (!fs.existsSync('./web'))
+        fs.mkdirSync('./web');
+    let prevData;
+    try {
+        prevData = fs.readFileSync('./web/localization.json', 'utf8');
+    } catch (e) {
+        console.log('No localization file');
+    }
+    {
+        fs.writeFile('./web/localization.json', makeStringsReadyToBeWrittenWeb(name, prevData), function (err) {
+            if (err) throw err;
+            console.log('Strings saved');
+        });
+    }
+}
+
 function makePermissionsReadyToBeWritten() {
     let res = '';
     for (let i = 0; i < PERMISSIONS_IOS.length; i++) {
@@ -428,6 +457,19 @@ function makeStringsReadyToBeWrittenIos() {
     }
 
     return result;
+}
+
+function makeStringsReadyToBeWrittenWeb(locale, prevData = "{}") {
+    const data = {};
+    for (let i = 0; i< STRINGS.length; i++) {
+        Object.assign(data, JSON.parse(STRINGS[i]))
+    }
+    for (let i = 0; i< PLURALS.length; i++) {
+        Object.assign(data, JSON.parse(PLURALS[i]))
+    }
+    const result = JSON.parse(prevData);
+    result[locale] = data;
+    return JSON.stringify(result, null, '\t');
 }
 
 //both
@@ -483,7 +525,7 @@ function parseIosStrings() {
     for (let i = 0; i < PLATFORMS.length; i++) {
         if (KEYS[i] && !LOCALE[i] && !PLATFORMS[i] && !NAMESPACES[i] && KEYS[i+1] && LOCALE[i+1] && PLATFORMS[i+1] && NAMESPACES[i+1]){
             STRINGS.push('');
-            let res = '//MARK: ' + KEYS[i].toString().substring(2, KEYS[i].length - 2);
+            let res = '// MARK: ' + KEYS[i].toString().substring(2, KEYS[i].length - 2);
             STRINGS.push(res);
             continue;
         }
@@ -512,16 +554,20 @@ function makeLocalesGreatAgain(locale, replaces){
     let howManyInsertions = 1;
     for (let i = 0; i<locale.length; i++) {
         if(locale[i] === '%' && locale[i+1] === 's') {
-            if (PLATFORM.toUpperCase() === 'ANDROID')
-                result += '%' + howManyInsertions  + '$s';
-            else
+            if (PLATFORM.toUpperCase() === 'ANDROID') {
+                result += '%' + howManyInsertions + '$s';
+            } else if (PLATFORM.toUpperCase() === 'IOS') {
                 result += '%@';
+            } else if (PLATFORM.toUpperCase() === 'WEB') {
+                result += `{{v${howManyInsertions}}}`;
+            }
             i++;
             howManyInsertions++;
             continue;
         }
         result += locale[i];
     }
+    result = result.replace(/%%/g, '%');
     if(replaces){
         const done = makeReplacesForXmlFile(result);
         return done;
@@ -582,6 +628,16 @@ function parseAndroidStrings() {
     }
 }
 
+function parseWebStrings() {
+    const res = {};
+    for (let i = 0; i < PLATFORMS.length; i++) {
+        if(!NAMESPACES[i] || !KEYS[i] || !LOCALE[i] || !PLATFORMS[i])
+            continue;
+        res[insertUnderScoresInsteadSpaces(NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(KEYS[i].toLocaleLowerCase())] = makeLocalesGreatAgain(LOCALE[i], false);
+    }
+    STRINGS.push(JSON.stringify(res, null, '\t'));
+}
+
 
 function parsePluralsAndroid() {
     let writeHeader = true;
@@ -612,6 +668,35 @@ function parsePluralsAndroid() {
     }
 }
 
+function parsePluralsWeb() {
+    const quantityMap = {
+        zero: '0',
+        one: 'one',
+        other: 'other'
+    };
+    const result = {};
+    let plurals = [];
+    for (let i = 0; i < PLURAL_PLAFORMS.length; i++) {
+        if(!PLURAL_NAMESPACES[i] || !PLURAL_PLAFORMS[i] || !PLURAL_QUANTITY[i] || !PLURAL_LOCALE[i] || !PLURAL_KEYS[i])
+            continue;
+
+        const key = insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase();
+        if (PLURAL_LOCALE[i] && quantityMap[PLURAL_QUANTITY[i]]) {
+            plurals.push({key: PLURAL_QUANTITY[i], value: PLURAL_LOCALE[i]});
+        }
+        if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1] || PLURAL_KEYS[i] !== PLURAL_KEYS[i+1]){
+            let val = "{count, plural, =";
+            for (const plural of plurals) {
+                val += `${quantityMap[plural.key]}{${plural.value.replace(/\%[ds]/g, '{count}')}} `
+            }
+            val += '}';
+            plurals = [];
+            result[key] = val;
+        }
+    }
+    PLURALS.push(JSON.stringify(result, null, '\t'));
+}
+
 //both
 function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
     let platform = '';
@@ -623,7 +708,7 @@ function filterPluralsByPlatform(platforms, namespace, key, quantity, locale) {
             namesp = namespace[i].toString();
             k = key[i].toString();
         }
-        if(PLATFORM_KEYS[PLATFORM.toUpperCase()].indexOf(platform.toUpperCase()) >= 0) {
+        if(PLATFORM_KEYS[PLATFORM.toUpperCase()].indexOf(platform.toUpperCase()) >= 0){
             PLURAL_PLAFORMS.push(platform);
             PLURAL_KEYS.push(k);
             PLURAL_LOCALE.push(locale[i].toString());
@@ -657,13 +742,13 @@ function filterByPlatform(platforms, namespaces, keys, locale) {
                 NAMESPACES.push(namespaces[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
                 KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
                 LOCALE.push(locale[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
-            } else {
+            }else {
                 NAMESPACES.push(namespaces[i].toString());
                 KEYS.push(keys[i].toString());
                 LOCALE.push(locale[i].toString());
             }
         }
-        if (!platforms[i].toString() && !!namespaces[i] && keys[i]) {
+        if(!platforms[i].toString() && !!namespaces[i] && keys[i]){
             PLATFORMS.push(null);
             NAMESPACES.push(null);
             KEYS.push(keys[i].toString().replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\'/g, "\\'"));
