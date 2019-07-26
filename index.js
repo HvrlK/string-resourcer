@@ -567,7 +567,9 @@ function makeLocalesGreatAgain(locale, replaces){
         }
         result += locale[i];
     }
-    result = result.replace(/%%/g, '%');
+    if (PLATFORM.toUpperCase() === 'WEB') {
+        result = result.replace(/%%/g, '%');
+    };
     if(replaces){
         const done = makeReplacesForXmlFile(result);
         return done;
