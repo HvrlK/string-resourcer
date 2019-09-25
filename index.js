@@ -10,7 +10,8 @@ const ALL_KEYS = ['ALL', 'BOTH'];
 PLATFORM_KEYS = {
     WEB: ['WEB', 'ALL'],
     ANDROID: ['ANDROID', 'ALL', 'BOTH', 'MOBILE'],
-    IOS: ['IOS', 'ALL', 'BOTH', 'MOBILE']
+    IOS: ['IOS', 'ALL', 'BOTH', 'MOBILE'],
+    REACT: ['REACT']
 };
 
 // If modifying these scopes, delete token.json.
@@ -371,7 +372,7 @@ async function getNeededData(auth) {
             writeFilesIos();
             console.log('finish ' + Date.now() / 1000);
         }
-        else if (PLATFORM.toUpperCase() === 'WEB') {
+        else if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT') {
             parseWebStrings();
             try{
                 parsePluralsWeb();
@@ -419,19 +420,28 @@ function writeFilesIos() {
 
 function writeFilesWeb() {
     const name = LOCALE_NAME.toLowerCase();
-    if (!fs.existsSync('./web'))
-        fs.mkdirSync('./web');
-    let prevData;
-    try {
-        prevData = fs.readFileSync('./web/localization.json', 'utf8');
-    } catch (e) {
-        console.log('No localization file');
-    }
-    {
-        fs.writeFile('./web/localization.json', makeStringsReadyToBeWrittenWeb(name, prevData), function (err) {
+    if (PLATFORM.toUpperCase() === 'REACT') {
+        if (!fs.existsSync('./react'))
+            fs.mkdirSync('./react');
+        fs.writeFile(`./react/${name}.json`, makeStringsReadyToBeWrittenWeb(), function (err) {
             if (err) throw err;
             console.log('Strings saved');
         });
+    } else {
+        if (!fs.existsSync('./web'))
+            fs.mkdirSync('./web');
+        let prevData;
+        try {
+            prevData = fs.readFileSync('./web/localization.json', 'utf8');
+        } catch (e) {
+            console.log('No localization file');
+        }
+        {
+            fs.writeFile('./web/localization.json', makeStringsReadyToBeWrittenWeb(name, prevData), function (err) {
+                if (err) throw err;
+                console.log('Strings saved');
+            });
+        }
     }
 }
 
@@ -467,8 +477,13 @@ function makeStringsReadyToBeWrittenWeb(locale, prevData = "{}") {
     for (let i = 0; i< PLURALS.length; i++) {
         Object.assign(data, JSON.parse(PLURALS[i]))
     }
-    const result = JSON.parse(prevData);
-    result[locale] = data;
+    let result = JSON.parse(prevData);
+    if (locale) {
+        result[locale] = data;
+    } else {
+        result = data;
+    }
+
     return JSON.stringify(result, null, '\t');
 }
 
@@ -558,7 +573,7 @@ function makeLocalesGreatAgain(locale, replaces){
                 result += '%' + howManyInsertions + '$s';
             } else if (PLATFORM.toUpperCase() === 'IOS') {
                 result += '%@';
-            } else if (PLATFORM.toUpperCase() === 'WEB') {
+            } else if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT') {
                 result += `{{v${howManyInsertions}}}`;
             }
             i++;
@@ -567,7 +582,7 @@ function makeLocalesGreatAgain(locale, replaces){
         }
         result += locale[i];
     }
-    if (PLATFORM.toUpperCase() === 'WEB') {
+    if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT') {
         result = result.replace(/%%/g, '%');
     };
     if(replaces){
@@ -689,13 +704,21 @@ function parsePluralsWeb() {
             plurals.push({key: PLURAL_QUANTITY[i], value: PLURAL_LOCALE[i]});
         }
         if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1] || PLURAL_KEYS[i] !== PLURAL_KEYS[i+1]){
-            let val = "{count, plural, =";
-            for (const plural of plurals) {
-                val += `${quantityMap[plural.key]}{${plural.value.replace(/\%[ds]/g, '{count}')}} `
+            if (PLATFORM.toUpperCase() === 'REACT') {
+                let val = {};
+                for (const plural of plurals) {
+                    val[plural.key] = plural.value.replace(/\%[ds]/g, '{{count}}');
+                }
+                result[key] = val;
+            } else {
+                let val = "{count, plural, =";
+                for (const plural of plurals) {
+                    val += `${quantityMap[plural.key]}{${plural.value.replace(/\%[ds]/g, '{count}')}} `
+                }
+                val += '}';
+                result[key] = val;
             }
-            val += '}';
             plurals = [];
-            result[key] = val;
         }
     }
     PLURALS.push(JSON.stringify(result, null, '\t'));
