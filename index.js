@@ -235,6 +235,7 @@ async function getStringsData(tableName, sheets, symbol, length, start) {
         try {
             result = await axios.get(url);
         } catch (error) {
+            console.error(error.response.data.error);
         }
 
         if (result) break;
@@ -700,7 +701,7 @@ function parsePluralsWeb() {
             continue;
 
         const key = insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase();
-        if (PLURAL_LOCALE[i] && quantityMap[PLURAL_QUANTITY[i]]) {
+        if (PLURAL_LOCALE[i] && (quantityMap[PLURAL_QUANTITY[i]] || PLATFORM.toUpperCase() === 'REACT')) {
             plurals.push({key: PLURAL_QUANTITY[i], value: PLURAL_LOCALE[i]});
         }
         if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1] || PLURAL_KEYS[i] !== PLURAL_KEYS[i+1]){
