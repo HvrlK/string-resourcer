@@ -11,7 +11,8 @@ PLATFORM_KEYS = {
     WEB: ['WEB', 'ALL'],
     ANDROID: ['ANDROID', 'ALL', 'BOTH', 'MOBILE'],
     IOS: ['IOS', 'ALL', 'BOTH', 'MOBILE'],
-    REACT: ['REACT']
+    REACT: ['REACT'],
+    SERVER: ['SERVER']
 };
 
 // If modifying these scopes, delete token.json.
@@ -373,7 +374,7 @@ async function getNeededData(auth) {
             writeFilesIos();
             console.log('finish ' + Date.now() / 1000);
         }
-        else if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT') {
+        else if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT' || PLATFORM.toUpperCase() === 'SERVER') {
             parseWebStrings();
             try{
                 parsePluralsWeb();
@@ -421,10 +422,10 @@ function writeFilesIos() {
 
 function writeFilesWeb() {
     const name = LOCALE_NAME.toLowerCase();
-    if (PLATFORM.toUpperCase() === 'REACT') {
-        if (!fs.existsSync('./react'))
-            fs.mkdirSync('./react');
-        fs.writeFile(`./react/${name}.json`, makeStringsReadyToBeWrittenWeb(), function (err) {
+    if (PLATFORM.toUpperCase() === 'REACT' || PLATFORM.toUpperCase() === 'SERVER') {
+        if (!fs.existsSync('./' + PLATFORM.toLowerCase()))
+            fs.mkdirSync('./' + PLATFORM.toLowerCase());
+        fs.writeFile(`./${PLATFORM.toLowerCase()}/${name}.json`, makeStringsReadyToBeWrittenWeb(), function (err) {
             if (err) throw err;
             console.log('Strings saved');
         });
@@ -574,7 +575,7 @@ function makeLocalesGreatAgain(locale, replaces){
                 result += '%' + howManyInsertions + '$s';
             } else if (PLATFORM.toUpperCase() === 'IOS') {
                 result += '%@';
-            } else if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT') {
+            } else if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT' || PLATFORM.toUpperCase() === 'SERVER') {
                 result += `{{v${howManyInsertions}}}`;
             }
             i++;
@@ -583,7 +584,7 @@ function makeLocalesGreatAgain(locale, replaces){
         }
         result += locale[i];
     }
-    if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT') {
+    if (PLATFORM.toUpperCase() === 'WEB' || PLATFORM.toUpperCase() === 'REACT' || PLATFORM.toUpperCase() === 'SERVER') {
         result = result.replace(/%%/g, '%');
     };
     if(replaces){
@@ -701,11 +702,11 @@ function parsePluralsWeb() {
             continue;
 
         const key = insertUnderScoresInsteadSpaces(PLURAL_NAMESPACES[i].toLocaleLowerCase()) + '_' + insertUnderScoresInsteadSpaces(PLURAL_KEYS[i]).toLocaleLowerCase();
-        if (PLURAL_LOCALE[i] && (quantityMap[PLURAL_QUANTITY[i]] || PLATFORM.toUpperCase() === 'REACT')) {
+        if (PLURAL_LOCALE[i] && (quantityMap[PLURAL_QUANTITY[i]] || PLATFORM.toUpperCase() === 'REACT' || PLATFORM.toUpperCase() === 'SERVER')) {
             plurals.push({key: PLURAL_QUANTITY[i], value: PLURAL_LOCALE[i]});
         }
         if(PLURAL_NAMESPACES[i] !== PLURAL_NAMESPACES[i+1] || PLURAL_KEYS[i] !== PLURAL_KEYS[i+1]){
-            if (PLATFORM.toUpperCase() === 'REACT') {
+            if (PLATFORM.toUpperCase() === 'REACT' || PLATFORM.toUpperCase() === 'SERVER') {
                 let val = {};
                 for (const plural of plurals) {
                     val[plural.key] = plural.value.replace(/\%[ds]/g, '{{count}}');
